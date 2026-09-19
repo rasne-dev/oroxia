@@ -14,7 +14,8 @@ class AppScanner(
     private val context: Context,
     private val appDao: AppDao,
     private val folderDao: FolderDao,
-    private val categorizer: LocalCategorizer = LocalCategorizer()
+    private val geminiCategorizer: GeminiCategorizer = GeminiCategorizer(),
+    private val localCategorizer: LocalCategorizer = LocalCategorizer()
 ) {
     companion object {
         const val CACHE_VALIDITY_MS = 7 * 24 * 60 * 60 * 1000L // 7 days cache validity rule
@@ -34,8 +35,8 @@ class AppScanner(
 
         val currentTime = System.currentTimeMillis()
         val cachedAppsMap = appDao.getAllAppsSync().associateBy { it.packageName }
+        val appsToCategorize = mutableListOf<AppInfoForPrompt>()
         val finalAppEntities = mutableListOf<AppEntity>()
-        val appsToSave = mutableListOf<AppEntity>()
 
         for (appInfo in userApps) {
             val pkg = appInfo.packageName
@@ -47,24 +48,35 @@ class AppScanner(
             if (!forceRefresh && isFresh) {
                 finalAppEntities.add(cached!!)
             } else {
-                // Categorize locally, instantly and accurately
-                val category = categorizer.categorizeApp(label, pkg, appInfo)
+                appsToCategorize.add(AppInfoForPrompt(packageName = pkg, appName = label))
+            }
+        }
+
+        if (appsToCategorize.isNotEmpty()) {
+            val categories = if (apiKey.isNotBlank()) {
+                geminiCategorizer.categorizeAppsBatch(apiKey, appsToCategorize)
+            } else {
+                appsToCategorize.associate { it.packageName to localCategorizer.categorizeApp(it.appName, it.packageName) }
+            }
+
+            val appsToSave = mutableListOf<AppEntity>()
+            for (appInfo in appsToCategorize) {
+                val category = categories[appInfo.packageName]
+                    ?: localCategorizer.categorizeApp(appInfo.appName, appInfo.packageName)
+                val existing = cachedAppsMap[appInfo.packageName]
                 val entity = AppEntity(
-                    packageName = pkg,
-                    appName = label,
+                    packageName = appInfo.packageName,
+                    appName = appInfo.appName,
                     category = category,
                     isSystemApp = false,
-                    installedAt = cached?.installedAt ?: currentTime,
+                    installedAt = existing?.installedAt ?: currentTime,
                     lastCategorizedAt = currentTime,
-                    assignedFolderId = cached?.assignedFolderId,
-                    isPinnedToHome = cached?.isPinnedToHome ?: false
+                    assignedFolderId = existing?.assignedFolderId,
+                    isPinnedToHome = existing?.isPinnedToHome ?: false
                 )
                 finalAppEntities.add(entity)
                 appsToSave.add(entity)
             }
-        }
-
-        if (appsToSave.isNotEmpty()) {
             appDao.insertApps(appsToSave)
         }
 
