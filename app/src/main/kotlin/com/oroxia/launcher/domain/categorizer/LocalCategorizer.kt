@@ -40,19 +40,41 @@ class LocalCategorizer {
             CATEGORY_OTHER
         )
 
-        // Comprehensive keyword dictionaries for Turkish & global apps
+        // Comprehensive keyword dictionaries for Turkish & global apps (normalized: i, g, u, s, o, c)
         private val CAREER_KEYWORDS = listOf(
-            "kariyer", "işin olsun", "isinolsun", "linkedin", "indeed", "işkur", "iskur",
+            "kariyer", "isin olsun", "isinolsun", "linkedin", "indeed", "iskur",
             "eleman", "secretcv", "yenibiris", "upwork", "fiverr", "freelancer", "armut",
-            "bionluk", "job", "career", "resume", "cv maker", "cv hazırla", "headhunter", "glassdoor", "monster"
+            "bionluk", "job", "career", "resume", "cv maker", "cv hazirla", "headhunter", "glassdoor", "monster"
         )
 
         private val FINANCE_KEYWORDS = listOf(
-            "garanti", "isbank", "ziraat", "akbank", "yapikredi", "vakif", "halkbank",
-            "qnb", "finansbank", "papara", "tosla", "ininal", "fastpay", "paycell",
-            "nays", "hadi", "binance", "paribu", "btcturk", "midas", "borsa", "crypto",
-            "bank", "wallet", "döviz", "cepteteb", "teb mobil", "ing bank", "ingbank", "albaraka", "kuveytturk", "enpara",
-            "fibabanka", "paypal", "revolut", "troy", "forex", "bitcoin"
+            // Turkish Banks & Official Apps
+            "garanti", "bbva", "cepsubesi", "isbank", "iscep", "is bankasi", "maximum",
+            "ziraat", "ziraat mobil", "ziraat katilim", "ziraat borsa",
+            "akbank", "axess", "wings", "yapikredi", "yapi kredi", "ykb", "world",
+            "vakif", "vakifbank", "vakif katilim", "vakif borsa",
+            "halkbank", "paraf", "halk yatirim", "qnb", "finansbank", "enpara",
+            "denizbank", "mobildeniz", "teb", "cepteteb", "ing bank", "ingbank", "ing mobil",
+            "albaraka", "kuveytturk", "kuveyt turk", "turkiye finans", "emlak katilim",
+            "anadolubank", "odeabank", "sekerbank", "burgan", "aktifbank", "nkolay", "n kolay",
+            "fibabanka", "hayat finans", "tom bank",
+            // Digital Wallets, FinTech & Payments
+            "papara", "tosla", "nays", "paycell", "fastpay", "hadi", "ininal", "pokus",
+            "param", "oldubil", "fups", "sipay", "pep", "iyzico", "paytr", "troy",
+            "paypal", "revolut", "wise", "wallet", "cuzdan", "kredi kart", "banka kart",
+            // Crypto, Stocks & Investments
+            "midas", "gedik", "oyak yatirim", "ak yatirim", "is yatirim", "matriks", "tradingview",
+            "borsa", "hisse", "portfoy", "yatirim fon", "tefas", "viop", "forex", "trading",
+            "binance", "btcturk", "paribu", "crypto", "kripto", "bitcoin", "btc", "ethereum",
+            "gateio", "okx", "mexc", "bybit", "bitlo", "coin",
+            // Currency, Gold, Budget, Expense, Tax
+            "doviz", "altin", "gumus", "canli kur", "doviz kur", "parite", "harem altin",
+            "butce", "gelir", "gider", "para yonetim", "para yoneticisi", "monefy", "spendee",
+            "1para", "butcem", "hesap defteri", "kasa",
+            "fatura", "odeme", "sanal pos", "pos mobil", "yazar kasa",
+            "gib", "gelir idaresi", "vergi", "e fatura", "gib mobile",
+            // Generic Finance Terms
+            "finance", "finans", "finansal", "banking", "banka", "bank"
         )
 
         private val SHOPPING_KEYWORDS = listOf(
@@ -89,18 +111,18 @@ class LocalCategorizer {
 
         private val EDUCATION_KEYWORDS = listOf(
             "duolingo", "udemy", "coursera", "khan", "ebba", "eba", "quizlet", "busuu",
-            "memrise", "cambly", "sözlük", "dictionary", "wikipedia", "learn", "study",
-            "course", "exam", "öğren", "ders", "kitap", "book"
+            "memrise", "cambly", "sozluk", "dictionary", "wikipedia", "learn", "study",
+            "course", "exam", "ogren", "ders", "kitap", "book"
         )
 
         private val HEALTH_KEYWORDS = listOf(
-            "mhrs", "enabiz", "e-nabız", "hastane", "fitness", "step", "adım", "diyet",
+            "mhrs", "enabiz", "hastane", "fitness", "step", "adim", "diyet",
             "diet", "water", "workout", "gym", "strava", "nike run", "meditasyon",
-            "health", "sağlık", "nabız", "kalori", "pharmacy", "eczane"
+            "health", "saglik", "nabiz", "kalori", "pharmacy", "eczane"
         )
 
         private val GAMES_KEYWORDS = listOf(
-            "game", "oyun", "puzzle", "clash", "pubg", "candy", "chess", "satranç",
+            "game", "oyun", "puzzle", "clash", "pubg", "candy", "chess", "satranc",
             "fifa", "roblox", "brawl", "minecraft", "sudoku", "runner", "race", "rpg",
             "action", "arcade", "casino", "poker", "tavla", "okey", "101"
         )
@@ -108,7 +130,7 @@ class LocalCategorizer {
         private val TOOLS_KEYWORDS = listOf(
             "calculator", "hesap makinesi", "file manager", "dosya", "cleaner", "antivirus",
             "vpn", "flashlight", "fener", "clock", "saat", "alarm", "weather", "hava durumu",
-            "settings", "ayarlar", "tools", "araçlar", "qr", "barcode", "speedtest"
+            "settings", "ayarlar", "tools", "araclar", "qr okuyucu", "qr scanner", "barcode scanner", "speedtest"
         )
     }
 
@@ -121,11 +143,11 @@ class LocalCategorizer {
         packageName: String,
         appInfo: ApplicationInfo? = null
     ): String {
-        val lowerName = appName.lowercase()
-        val lowerPkg = packageName.lowercase()
-        val combined = "$lowerName $lowerPkg"
+        val normalizedName = normalizeText(appName)
+        val normalizedPkg = normalizeText(packageName)
+        val combined = "$normalizedName $normalizedPkg"
 
-        // 1. High Priority Semantic Matches (Career & Jobs takes precedence for user request)
+        // 1. High Priority Semantic Matches (Career and Finance have top priority)
         if (combined.containsAny(CAREER_KEYWORDS)) return CATEGORY_CAREER
         if (combined.containsAny(FINANCE_KEYWORDS)) return CATEGORY_FINANCE
         if (combined.containsAny(SHOPPING_KEYWORDS)) return CATEGORY_SHOPPING
@@ -147,7 +169,18 @@ class LocalCategorizer {
         }
 
         // 3. Fallback to Tools or Other
-        return if (lowerPkg.contains("tool") || lowerPkg.contains("util")) CATEGORY_TOOLS else CATEGORY_OTHER
+        return if (normalizedPkg.contains("tool") || normalizedPkg.contains("util")) CATEGORY_TOOLS else CATEGORY_OTHER
+    }
+
+    private fun normalizeText(text: String): String {
+        return text.lowercase()
+            .replace("ı", "i")
+            .replace("ğ", "g")
+            .replace("ü", "u")
+            .replace("ş", "s")
+            .replace("ö", "o")
+            .replace("ç", "c")
+            .replace(Regex("[^a-z0-9]"), " ")
     }
 
     private fun mapAndroidOsCategory(osCategory: Int): String? {

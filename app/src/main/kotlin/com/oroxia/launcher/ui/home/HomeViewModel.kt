@@ -98,6 +98,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     val apiKey = prefs.geminiApiKeyFlow.first()
                     appScanner.scanAndCategorizeInstalledApps(apiKey, forceRefresh = force)
                     prefs.updateLastScanTimestamp()
+                    if (force) {
+                        smartFolderManager.autoOrganizeAll()
+                    }
                     refreshSuggestions()
                 } catch (e: Exception) {
                     _userMessage.value = "Tarama sırasında bir hata oluştu: ${e.localizedMessage}"

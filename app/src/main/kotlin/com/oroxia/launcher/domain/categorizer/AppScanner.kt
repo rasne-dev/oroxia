@@ -64,6 +64,14 @@ class AppScanner(
                 val category = categories[appInfo.packageName]
                     ?: localCategorizer.categorizeApp(appInfo.appName, appInfo.packageName)
                 val existing = cachedAppsMap[appInfo.packageName]
+
+                // If app category changed upon re-scan, re-route it to the new folder ID
+                val folderId = if (existing != null && existing.assignedFolderId != null && existing.category != category) {
+                    "folder_${category.lowercase().replace(" ", "_").replace("&", "ve")}"
+                } else {
+                    existing?.assignedFolderId
+                }
+
                 val entity = AppEntity(
                     packageName = appInfo.packageName,
                     appName = appInfo.appName,
@@ -71,7 +79,7 @@ class AppScanner(
                     isSystemApp = false,
                     installedAt = existing?.installedAt ?: currentTime,
                     lastCategorizedAt = currentTime,
-                    assignedFolderId = existing?.assignedFolderId,
+                    assignedFolderId = folderId,
                     isPinnedToHome = existing?.isPinnedToHome ?: false
                 )
                 finalAppEntities.add(entity)

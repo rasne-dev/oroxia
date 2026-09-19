@@ -39,9 +39,37 @@ class GeminiCategorizerTest {
     }
 
     @Test
+    fun testParseGeminiResponse_GroupedFormat() {
+        val mockResponse = """
+            {
+              "candidates": [
+                {
+                  "content": {
+                    "parts": [
+                      {
+                        "text": "{\n  \"Finans & Bankacilik\": [\n    {\"package_name\": \"com.isbank.iscep\"},\n    {\"package_name\": \"com.ykb.android\"}\n  ]\n}"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val parsed = categorizer.parseGeminiResponse(mockResponse)
+        assertEquals("Finans & Bankacilik", parsed["com.isbank.iscep"])
+        assertEquals("Finans & Bankacilik", parsed["com.ykb.android"])
+    }
+
+    @Test
     fun testNormalizeCategory() {
         assertEquals(LocalCategorizer.CATEGORY_CAREER, categorizer.normalizeCategory("kariyer & iş"))
         assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.normalizeCategory("finans & bankacılık"))
+        assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.normalizeCategory("Finans & Bankacilik"))
+        assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.normalizeCategory("Finans"))
+        assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.normalizeCategory("Finance"))
+        assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.normalizeCategory("Banka"))
+        assertEquals(LocalCategorizer.CATEGORY_CAREER, categorizer.normalizeCategory("Career"))
         assertEquals(LocalCategorizer.CATEGORY_OTHER, categorizer.normalizeCategory("bilinmeyen"))
     }
 }

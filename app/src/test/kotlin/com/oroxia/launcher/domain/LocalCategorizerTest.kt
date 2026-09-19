@@ -29,9 +29,18 @@ class LocalCategorizerTest {
     fun testFinanceCategory_MatchesBankingAndCrypto() {
         assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.categorizeApp("Garanti BBVA", "com.garanti.mobile"))
         assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.categorizeApp("Ziraat Mobil", "com.ziraat.ziraatmobil"))
+        assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.categorizeApp("İşCep", "com.isbank.iscep"))
+        assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.categorizeApp("Yapı Kredi", "com.ykb.android"))
+        assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.categorizeApp("MobilDeniz", "com.tmob.denizbank"))
+        assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.categorizeApp("QNB Mobil", "com.finansbank.mobile.cepsube"))
+        assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.categorizeApp("Kuveyt Türk", "com.kuveytturk.mobil"))
         assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.categorizeApp("Papara", "com.mobillium.papara"))
+        assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.categorizeApp("Tosla", "com.akbank.tosla"))
+        assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.categorizeApp("Nays", "com.dgpays.nays"))
         assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.categorizeApp("Binance", "com.binance.dev"))
         assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.categorizeApp("Midas", "com.getmidas.app"))
+        assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.categorizeApp("Para Yöneticisi", "com.realbyteapps.moneymanager"))
+        assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.categorizeApp("Canlı Döviz", "com.doviz.app"))
     }
 
     @Test
