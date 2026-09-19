@@ -1,20 +1,17 @@
 # Oroxia
 
-> 🚀 100% Offline Smart Launcher & Home Screen Organizer  
-> Yapay zeka ve semantik kurallarla donatılmış, API anahtarı gerektirmeyen %100 çevrimdışı Android başlatıcı
+> 🚀 AI-Powered Smart Android Launcher & Home Screen Organizer  
+> Yapay zeka destekli akıllı Android başlatıcı ve ana ekran yöneticisi
 
-Oroxia is a modern, privacy-first Android Custom Launcher built with Jetpack Compose. It automatically categorizes your installed applications using a fast, on-device semantic engine — grouping them into smart folders on your home screen and offering proactive recommendations when new apps are installed (e.g. suggesting adding *Kariyer.net* to an existing *Kariyer & İş* folder alongside *LinkedIn* and *Indeed*).
-
-**Zero API keys, zero cloud dependencies, 100% privacy and instant performance.**
+Oroxia is a modern Android Custom Launcher built with Jetpack Compose. It automatically categorizes your installed applications using Gemini 2.0 Flash AI and a fast semantic engine — grouping them into smart folders on your home screen and offering proactive recommendations when new apps are installed (e.g. suggesting adding *Kariyer.net* to an existing *Kariyer & İş* folder alongside *LinkedIn* and *Indeed*).
 
 ---
 
 ## 🌟 Key Features / Öne Çıkan Özellikler
 
-- **⚡ 100% On-Device & Offline Smart Categorization (Sıfır API Anahtarı, Tamamen Çevrimdışı):**
-  - Runs directly on your device with zero cloud latency.
+- **🧠 AI & Semantic Categorization (Yapay Zeka Destekli Akıllı Kategorilendirme):**
+  - Uses Gemini 2.0 Flash API with local semantic fallbacks.
   - Automatically identifies Turkish & global applications (*LinkedIn, Indeed, Kariyer.net, İŞKUR, İşin Olsun* are accurately grouped under **Kariyer & İş**).
-  - No API keys, no subscriptions, no accounts required. Works out of the box on first launch.
 
 - **📁 Smart Folders (Akıllı Klasörler):**
   - Automatically creates and manages category-based folders on your home screen (Kariyer & İş, Finans & Bankacılık, Sosyal & İletişim, Alışveriş, Eğlence & Medya, Üretkenlik, Seyahat, Sağlık, Oyunlar, Araçlar).
@@ -25,11 +22,9 @@ Oroxia is a modern, privacy-first Android Custom Launcher built with Jetpack Com
     > *"Cihazınızda Kariyer.net tespit edildi. 'Kariyer' klasörüne eklensin mi?"*
   - Choose between **Interactive Suggestion Mode** (ask with 1-tap accept/dismiss) or **Full Auto Mode** (organize silently).
 
-- **🔕 Zero Spam Background Worker:**
-  - Uses Android WorkManager for weekly maintenance scans and new app events. No persistent foreground services draining your battery.
-
-- **🔒 Privacy First & Open Source:**
-  - No trackers, no ads. API keys stored strictly in `local.properties` or encrypted locally via DataStore.
+- **⚡ Fast & Fluid Performance (Yüksek Performans):**
+  - In-memory `LruCache` icon caching delivers seamless 120 FPS scrolling even with 100+ installed apps.
+  - Uses Android WorkManager for scheduled scans. Zero persistent battery drain.
 
 ---
 
