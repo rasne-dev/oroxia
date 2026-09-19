@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Oroxia</string>
+    <string name="career_category">Kariyer &amp; İş</string>
+    <string name="finance_category">Finans &amp; Bankacılık</string>
+    <string name="social_category">Sosyal &amp; İletişim</string>
+    <string name="shopping_category">Alışveriş</string>
+    <string name="entertainment_category">Eğlence &amp; Medya</string>
+    <string name="productivity_category">Üretkenlik &amp; Ofis</string>
+    <string name="tools_category">Araçlar &amp; Sistem</string>
+    <string name="games_category">Oyunlar</string>
+    <string name="education_category">Eğitim &amp; Referans</string>
+    <string name="health_category">Sağlık &amp; Yaşam</string>
+    <string name="other_category">Diğer</string>
+</resources>
