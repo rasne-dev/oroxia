@@ -14,63 +14,58 @@ class AppScanner(
     private val context: Context,
     private val appDao: AppDao,
     private val folderDao: FolderDao,
-    private val geminiCategorizer: GeminiCategorizer = GeminiCategorizer()
+    private val categorizer: LocalCategorizer = LocalCategorizer()
 ) {
     companion object {
         const val CACHE_VALIDITY_MS = 7 * 24 * 60 * 60 * 1000L // 7 days cache validity rule
     }
 
     suspend fun scanAndCategorizeInstalledApps(
-        apiKey: String,
+        apiKey: String = "",
         forceRefresh: Boolean = false
     ): List<AppEntity> = withContext(Dispatchers.IO) {
         val pm = context.packageManager
         val installed = pm.getInstalledApplications(PackageManager.GET_META_DATA)
 
-        // Filter system apps per AGENTS.md constraint
+        // Filter system apps per constraints
         val userApps = installed.filter { appInfo ->
             (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) == 0
         }
 
         val currentTime = System.currentTimeMillis()
         val cachedAppsMap = appDao.getAllAppsSync().associateBy { it.packageName }
-        val appsToCategorizeWithGemini = mutableListOf<AppInfoForPrompt>()
         val finalAppEntities = mutableListOf<AppEntity>()
+        val appsToSave = mutableListOf<AppEntity>()
 
         for (appInfo in userApps) {
             val pkg = appInfo.packageName
             val label = pm.getApplicationLabel(appInfo).toString()
             val cached = cachedAppsMap[pkg]
 
-            // Check cache freshness rule (< 7 days)
             val isFresh = cached != null && (currentTime - cached.lastCategorizedAt) < CACHE_VALIDITY_MS
 
             if (!forceRefresh && isFresh) {
                 finalAppEntities.add(cached!!)
             } else {
-                appsToCategorizeWithGemini.add(AppInfoForPrompt(packageName = pkg, appName = label))
+                // Categorize locally, instantly and accurately
+                val category = categorizer.categorizeApp(label, pkg, appInfo)
+                val entity = AppEntity(
+                    packageName = pkg,
+                    appName = label,
+                    category = category,
+                    isSystemApp = false,
+                    installedAt = cached?.installedAt ?: currentTime,
+                    lastCategorizedAt = currentTime,
+                    assignedFolderId = cached?.assignedFolderId,
+                    isPinnedToHome = cached?.isPinnedToHome ?: false
+                )
+                finalAppEntities.add(entity)
+                appsToSave.add(entity)
             }
         }
 
-        // Batch categorize via Gemini 2.0 Flash
-        if (appsToCategorizeWithGemini.isNotEmpty()) {
-            val categories = geminiCategorizer.categorizeAppsBatch(apiKey, appsToCategorizeWithGemini)
-            for (appInfo in appsToCategorizeWithGemini) {
-                val category = categories[appInfo.packageName] ?: "Diğer"
-                val existing = cachedAppsMap[appInfo.packageName]
-                val entity = AppEntity(
-                    packageName = appInfo.packageName,
-                    appName = appInfo.appName,
-                    category = category,
-                    isSystemApp = false,
-                    installedAt = existing?.installedAt ?: currentTime,
-                    lastCategorizedAt = currentTime,
-                    assignedFolderId = existing?.assignedFolderId,
-                    isPinnedToHome = existing?.isPinnedToHome ?: false
-                )
-                finalAppEntities.add(entity)
-            }
-            appDao.insertApps(finalAppEntities)
+        if (appsToSave.isNotEmpty()) {
+            appDao.insertApps(appsToSave)
         }
 
         // Synchronize default folders in Room if not exist
@@ -87,7 +82,7 @@ class AppScanner(
         for (category in categoriesInUse) {
             if (!existingFolders.containsKey(category)) {
                 val folder = FolderEntity(
-                    id = "folder_${category.lowercase()}",
+                    id = "folder_${category.lowercase().replace(" ", "_").replace("&", "ve")}",
                     name = category,
                     category = category,
                     orderIndex = order++,

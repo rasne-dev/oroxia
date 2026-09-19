@@ -1,21 +1,23 @@
 # Oroxia
 
-> 🚀 AI-powered Android Smart Launcher & Home Screen Organizer  
-> Yapay zeka destekli akıllı Android başlatıcı ve ana ekran düzenleyici
+> 🚀 100% Offline Smart Launcher & Home Screen Organizer  
+> Yapay zeka ve semantik kurallarla donatılmış, API anahtarı gerektirmeyen %100 çevrimdışı Android başlatıcı
 
-Oroxia is a modern Android Custom Launcher built with Jetpack Compose that uses the **Gemini 2.0 Flash API** to automatically categorize your installed applications, group them into smart folders on your home screen, and provide proactive recommendations when new apps are installed (e.g. suggesting adding *Kariyer.net* to an existing *Kariyer* folder alongside *LinkedIn* and *Indeed*).
+Oroxia is a modern, privacy-first Android Custom Launcher built with Jetpack Compose. It automatically categorizes your installed applications using a fast, on-device semantic engine — grouping them into smart folders on your home screen and offering proactive recommendations when new apps are installed (e.g. suggesting adding *Kariyer.net* to an existing *Kariyer & İş* folder alongside *LinkedIn* and *Indeed*).
+
+**Zero API keys, zero cloud dependencies, 100% privacy and instant performance.**
 
 ---
 
 ## 🌟 Key Features / Öne Çıkan Özellikler
 
-- **🤖 AI-Powered Categorization (Gemini 2.0 Flash):**
-  - Analyzes installed applications in batch prompts to stay strictly within rate limits.
-  - Understands local and global apps (e.g., *LinkedIn, Indeed, Kariyer.net, İŞKUR, İşin Olsun* are accurately grouped under **Kariyer & İş**).
-  - Fully functional offline after initial categorization thanks to local Room DB caching (< 7 days cache freshness rule).
+- **⚡ 100% On-Device & Offline Smart Categorization (Sıfır API Anahtarı, Tamamen Çevrimdışı):**
+  - Runs directly on your device with zero cloud latency.
+  - Automatically identifies Turkish & global applications (*LinkedIn, Indeed, Kariyer.net, İŞKUR, İşin Olsun* are accurately grouped under **Kariyer & İş**).
+  - No API keys, no subscriptions, no accounts required. Works out of the box on first launch.
 
 - **📁 Smart Folders (Akıllı Klasörler):**
-  - Automatically creates and manages category-based folders on your home screen (Career, Finance, Social, Shopping, Entertainment, Productivity, Games, Tools, etc.).
+  - Automatically creates and manages category-based folders on your home screen (Kariyer & İş, Finans & Bankacılık, Sosyal & İletişim, Alışveriş, Eğlence & Medya, Üretkenlik, Seyahat, Sağlık, Oyunlar, Araçlar).
   - 2x2 live icon previews for folders and expandable bottom sheets to launch apps instantly.
 
 - **💡 Proactive Suggestions (Akıllı Öneriler):**

@@ -14,9 +14,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -24,8 +25,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -43,16 +42,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oroxia.launcher.OroxiaApplication
+import com.oroxia.launcher.ui.home.HomeViewModel
 import com.oroxia.launcher.ui.theme.AccentPurple
 import com.oroxia.launcher.ui.theme.AccentTeal
 import com.oroxia.launcher.ui.theme.SurfaceDark
-import com.oroxia.launcher.ui.theme.SurfaceVariantDark
 import com.oroxia.launcher.ui.theme.TextPrimary
 import com.oroxia.launcher.ui.theme.TextSecondary
 import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(
+    viewModel: HomeViewModel,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -61,12 +61,9 @@ fun SettingsScreen(
     val prefs = app.preferencesRepository
     val coroutineScope = rememberCoroutineScope()
 
-    val currentApiKey by prefs.geminiApiKeyFlow.collectAsState(initial = "")
     val autoFolderPlacement by prefs.autoFolderPlacementFlow.collectAsState(initial = false)
     val autoCategorize by prefs.autoCategorizeEnabledFlow.collectAsState(initial = true)
-
-    var inputApiKey by remember(currentApiKey) { mutableStateOf(currentApiKey) }
-    var keySavedMessage by remember { mutableStateOf<String?>(null) }
+    var actionMessage by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = modifier
@@ -92,7 +89,7 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Default Launcher Setting Card
+        // Default Launcher Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = SurfaceDark),
@@ -105,7 +102,7 @@ fun SettingsScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Varsayılan Başlatıcı (Launcher)", color = TextPrimary, fontWeight = FontWeight.SemiBold)
                         Text(
-                            "Oroxia'yı varsayılan ana ekranınız yaparak tüm akıllı klasörleri yönetin.",
+                            "Oroxia'yı varsayılan ana ekranınız yaparak tüm akıllı klasörleri ve düzeni yönetin.",
                             color = TextSecondary,
                             fontSize = 12.sp
                         )
@@ -129,7 +126,7 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Gemini 2.0 Flash API Key Card
+        // On-device Offline Smart Engine Info Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = SurfaceDark),
@@ -137,53 +134,34 @@ fun SettingsScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Key, contentDescription = null, tint = AccentPurple)
+                    Icon(Icons.Default.Security, contentDescription = null, tint = AccentTeal)
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
-                        Text("Gemini 2.0 Flash API Anahtarı", color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                        Text("Cihaz İçi Akıllı Motor (%100 Çevrimdışı)", color = TextPrimary, fontWeight = FontWeight.SemiBold)
                         Text(
-                            "Kategorilendirme için kullanılır. local.properties veya buradan tanımlanabilir.",
+                            "Hiçbir API anahtarı veya internet bağlantısı gerekmez. Verileriniz ve uygulama listeniz cihazınızdan asla çıkmaz.",
                             color = TextSecondary,
                             fontSize = 12.sp
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedTextField(
-                    value = inputApiKey,
-                    onValueChange = { inputApiKey = it },
-                    label = { Text("API Anahtarı") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = SurfaceVariantDark,
-                        unfocusedContainerColor = SurfaceVariantDark,
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary
-                    ),
-                    singleLine = true
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Button(
                     onClick = {
-                        coroutineScope.launch {
-                            prefs.setGeminiApiKey(inputApiKey.trim())
-                            keySavedMessage = "API anahtarı başarıyla kaydedildi."
-                        }
+                        viewModel.refreshApps(force = true)
+                        actionMessage = "Tüm uygulamalar yerel akıllı motor ile yeniden tarandı."
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = AccentTeal),
                     shape = RoundedCornerShape(10.dp)
                 ) {
-                    Icon(Icons.Default.Save, contentDescription = null)
+                    Icon(Icons.Default.Refresh, contentDescription = null, tint = SurfaceDark)
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Kaydet", color = SurfaceDark)
+                    Text("Uygulamaları Yeniden Tara", color = SurfaceDark)
                 }
 
-                keySavedMessage?.let {
+                actionMessage?.let {
                     Text(it, color = AccentTeal, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
                 }
             }
@@ -191,7 +169,7 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Folder Placement Mode Card
+        // Folder Placement Preferences Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = SurfaceDark),
@@ -205,7 +183,7 @@ fun SettingsScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Tam Otomatik Klasörleme", color = TextPrimary, fontWeight = FontWeight.SemiBold)
                         Text(
-                            "Açıkken yeni uygulamaları onay istemeden doğrudan klasöre ekler. Kapalıyken size öneri sunar.",
+                            "Açıkken yeni uygulamaları onay sormadan doğrudan ilgili klasöre ekler. Kapalıyken ana ekranda akıllı öneri kartı sunar.",
                             color = TextSecondary,
                             fontSize = 12.sp
                         )
@@ -224,9 +202,9 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Yapay Zeka ile Kategorileme", color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                        Text("Akıllı Kategori Eşleme", color = TextPrimary, fontWeight = FontWeight.SemiBold)
                         Text(
-                            "Gemini 2.0 Flash kullanarak akıllı sınıflandırma yapar.",
+                            "Kariyer, Finans, Sosyal, Alışveriş vb. semantik kategorileri otomatik uygular.",
                             color = TextSecondary,
                             fontSize = 12.sp
                         )

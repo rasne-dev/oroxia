@@ -58,6 +58,7 @@ class MainActivity : ComponentActivity() {
                         }
                         LauncherScreen.SETTINGS -> {
                             SettingsScreen(
+                                viewModel = homeViewModel,
                                 onBack = { currentScreen = LauncherScreen.HOME }
                             )
                         }

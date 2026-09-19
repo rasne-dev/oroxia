@@ -46,7 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oroxia.launcher.data.local.entity.AppEntity
-import com.oroxia.launcher.domain.categorizer.GeminiCategorizer
+import com.oroxia.launcher.domain.categorizer.LocalCategorizer
 import com.oroxia.launcher.ui.common.AppIcon
 import com.oroxia.launcher.ui.home.HomeViewModel
 import com.oroxia.launcher.ui.theme.AccentPurple
@@ -66,7 +66,7 @@ fun AppDrawerScreen(
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Hepsi") }
 
-    val categories = remember { listOf("Hepsi") + GeminiCategorizer.TAXONOMY }
+    val categories = remember { listOf("Hepsi") + LocalCategorizer.TAXONOMY }
 
     // Combine all apps from folders and uncategorized
     val allApps = remember(uiState.foldersWithApps, uiState.uncategorizedApps) {
