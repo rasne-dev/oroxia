@@ -47,7 +47,7 @@ class GeminiCategorizer(
     ): Map<String, String> = withContext(Dispatchers.IO) {
         if (apps.isEmpty()) return@withContext emptyMap()
         if (apiKey.isBlank() || apiKey == "your_gemini_api_key_here") {
-            return@withContext apps.associate { it.packageName to localFallback.categorizeApp(it.appName, it.packageName) }
+            return@withContext apps.associate { it.packageName to resolveCategoryWithSafetyGuard(it, null) }
         }
 
         val result = mutableMapOf<String, String>()
@@ -59,17 +59,34 @@ class GeminiCategorizer(
                 val responseJson = callGeminiApi(apiKey, prompt)
                 val parsed = parseGeminiResponse(responseJson)
                 for (app in chunk) {
-                    val cat = parsed[app.packageName] ?: localFallback.categorizeApp(app.appName, app.packageName)
-                    result[app.packageName] = normalizeCategory(cat)
+                    result[app.packageName] = resolveCategoryWithSafetyGuard(app, parsed[app.packageName])
                 }
             } catch (e: Exception) {
                 // Seamless local fallback if network error or rate limit
                 for (app in chunk) {
-                    result[app.packageName] = localFallback.categorizeApp(app.appName, app.packageName)
+                    result[app.packageName] = resolveCategoryWithSafetyGuard(app, null)
                 }
             }
         }
         result
+    }
+
+    fun resolveCategoryWithSafetyGuard(app: AppInfoForPrompt, geminiCategory: String?): String {
+        // 1. High-confidence deterministic overrides (Prevents AI hallucinations for Banks, Credit Cards, Career)
+        if (localFallback.isHighConfidenceFinance(app.appName, app.packageName)) {
+            return LocalCategorizer.CATEGORY_FINANCE
+        }
+        if (localFallback.isHighConfidenceCareer(app.appName, app.packageName)) {
+            return LocalCategorizer.CATEGORY_CAREER
+        }
+
+        // 2. Gemini prediction if present
+        if (!geminiCategory.isNullOrBlank()) {
+            return normalizeCategory(geminiCategory)
+        }
+
+        // 3. Local fallback
+        return localFallback.categorizeApp(app.appName, app.packageName)
     }
 
     private fun buildBatchPrompt(apps: List<AppInfoForPrompt>): String {
@@ -80,13 +97,13 @@ class GeminiCategorizer(
             ${TAXONOMY.joinToString(", ")}
 
             KESİN VE ZORUNLU KATEGORİ KURALLARI:
-            1. FINANS & BANKACILIK KURALI:
-               - Tüm bankacılık (İşCep, Garanti BBVA, Akbank, Yapı Kredi, Ziraat Mobil, VakıfBank, Halkbank, QNB Mobil, DenizBank, Enpara, TEB, ING, Kuveyt Türk, Albaraka vb.)
-               - Tüm dijital cüzdan ve ödeme (Papara, Tosla, Nays, Paycell, FastPay, Hadi, İninal, Pokus, Param, Sipay vb.)
-               - Borsa, hisse, yatırım (Midas, Gedik, Oyak Yatırım vb.)
-               - Kripto para (Binance, BtcTurk, Paribu vb.)
-               - Döviz, altın, bütçe takibi, para yöneticisi, fatura ödeme ve vergi uygulamalarını MUTLAKA "${LocalCategorizer.CATEGORY_FINANCE}" kategorisine ata.
-               - DİKKAT: Para veya bankacılık ile ilgili hiçbir uygulamayı KESİNLİKLE "${LocalCategorizer.CATEGORY_TOOLS}" veya "${LocalCategorizer.CATEGORY_PRODUCTIVITY}" kategorisine ATMA!
+            1. FINANS & BANKACILIK KURALI (EN YÜKSEK ÖNCELİK):
+               - Tüm bankacılık uygulamaları: İşCep, Garanti BBVA, Akbank, Yapı Kredi, Ziraat Mobil, VakıfBank, Halkbank, QNB Mobil, DenizBank, Enpara, TEB, ING, Kuveyt Türk, Albaraka, Şekerbank vb.
+               - TÜM KREDİ KARTI, SADAKAT VE KART YÖNETİM UYGULAMALARI: World Mobil (Yapı Kredi / com.ykb.avm), Bonus Flaş (Garanti), Maximum Mobil (İş Bankası), Juzdan / Axess (Akbank), Paraf Mobil (Halkbank), CardFinans (QNB), Cepteteb vb. KESİNLİKLE "${LocalCategorizer.CATEGORY_FINANCE}" kategorisindedir! Asla "${LocalCategorizer.CATEGORY_TOOLS}" veya "${LocalCategorizer.CATEGORY_SHOPPING}" yapılmamalıdır!
+               - Tüm dijital cüzdan, ön ödemeli kart ve ödeme sistemleri: Papara, Tosla, Nays, Paycell, FastPay, Hadi, İninal, Pokus, Param, FUPS, Sipay, Oldubil, PeP, Ozan SuperApp, Moneypay, Troy, BKM Express, PayTR, İyzico vb.
+               - Borsa, hisse, yatırım ve kripto para: Midas, Gedik, Oyak Yatırım, Matriks, TradingView, Binance, BtcTurk, Paribu, Gate.io, OKX, MEXC, Bybit vb.
+               - Döviz, altın, bütçe takibi, para yöneticisi, fatura ödeme, POS araçları (POS Cepte vb.), vergi ve GİB uygulamalarını MUTLAKA "${LocalCategorizer.CATEGORY_FINANCE}" kategorisine ata.
+               - DİKKAT: Para, kart veya bankacılık ile ilgili hiçbir uygulamayı KESİNLİKLE "${LocalCategorizer.CATEGORY_TOOLS}" veya "${LocalCategorizer.CATEGORY_PRODUCTIVITY}" kategorisine ATMA!
 
             2. KARİYER & İŞ KURALI:
                - LinkedIn, Indeed, Kariyer.net, İŞKUR, İşin Olsun, Eleman.net, CV hazırlama, iş arama uygulamalarını mutlaka "${LocalCategorizer.CATEGORY_CAREER}" kategorisine ata.

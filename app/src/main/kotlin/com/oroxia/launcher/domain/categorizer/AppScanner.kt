@@ -49,6 +49,7 @@ class AppScanner(
 
         val appsToCategorize = mutableListOf<AppInfoForPrompt>()
         val finalAppEntities = mutableListOf<AppEntity>()
+        val appsToUpdateInCache = mutableListOf<AppEntity>()
 
         for (appInfo in userApps) {
             val pkg = appInfo.packageName
@@ -58,10 +59,51 @@ class AppScanner(
             val isFresh = cached != null && (currentTime - cached.lastCategorizedAt) < CACHE_VALIDITY_MS
 
             if (!forceRefresh && isFresh) {
-                finalAppEntities.add(cached!!)
+                var updatedCached = cached!!
+                var changed = false
+
+                // 1. Auto-heal deterministic category misclassifications (e.g., World Mobil in Tools)
+                if (localCategorizer.isHighConfidenceFinance(label, pkg) &&
+                    !updatedCached.category.equals(LocalCategorizer.CATEGORY_FINANCE, ignoreCase = true)
+                ) {
+                    updatedCached = updatedCached.copy(
+                        category = LocalCategorizer.CATEGORY_FINANCE,
+                        assignedFolderId = getFolderIdForCategory(LocalCategorizer.CATEGORY_FINANCE),
+                        lastCategorizedAt = currentTime
+                    )
+                    changed = true
+                } else if (localCategorizer.isHighConfidenceCareer(label, pkg) &&
+                    !updatedCached.category.equals(LocalCategorizer.CATEGORY_CAREER, ignoreCase = true)
+                ) {
+                    updatedCached = updatedCached.copy(
+                        category = LocalCategorizer.CATEGORY_CAREER,
+                        assignedFolderId = getFolderIdForCategory(LocalCategorizer.CATEGORY_CAREER),
+                        lastCategorizedAt = currentTime
+                    )
+                    changed = true
+                }
+
+                // 2. Ensure assignedFolderId is populated for any cached app that belongs to a category
+                if (updatedCached.assignedFolderId == null &&
+                    !updatedCached.category.equals(LocalCategorizer.CATEGORY_OTHER, ignoreCase = true)
+                ) {
+                    updatedCached = updatedCached.copy(
+                        assignedFolderId = getFolderIdForCategory(updatedCached.category)
+                    )
+                    changed = true
+                }
+
+                if (changed) {
+                    appsToUpdateInCache.add(updatedCached)
+                }
+                finalAppEntities.add(updatedCached)
             } else {
                 appsToCategorize.add(AppInfoForPrompt(packageName = pkg, appName = label))
             }
+        }
+
+        if (appsToUpdateInCache.isNotEmpty()) {
+            appDao.insertApps(appsToUpdateInCache)
         }
 
         if (appsToCategorize.isNotEmpty()) {
@@ -79,7 +121,7 @@ class AppScanner(
 
                 // Automatically assign app to its matching smart category folder (unless it's "Diğer")
                 val categoryFolderId = if (!category.equals(LocalCategorizer.CATEGORY_OTHER, ignoreCase = true)) {
-                    "folder_${category.lowercase().replace(" ", "_").replace("&", "ve")}"
+                    getFolderIdForCategory(category)
                 } else {
                     null
                 }
@@ -118,9 +160,9 @@ class AppScanner(
 
         var order = existingFolders.size
         for (category in categoriesInUse) {
-            if (!existingFolders.containsKey(category)) {
+            if (!category.equals(LocalCategorizer.CATEGORY_OTHER, ignoreCase = true) && !existingFolders.containsKey(category)) {
                 val folder = FolderEntity(
-                    id = "folder_${category.lowercase().replace(" ", "_").replace("&", "ve")}",
+                    id = getFolderIdForCategory(category),
                     name = category,
                     category = category,
                     orderIndex = order++,
@@ -129,5 +171,20 @@ class AppScanner(
                 folderDao.insertFolder(folder)
             }
         }
+    }
+
+    fun getFolderIdForCategory(category: String): String {
+        val slug = category.lowercase()
+            .replace("ı", "i")
+            .replace("ğ", "g")
+            .replace("ü", "u")
+            .replace("ş", "s")
+            .replace("ö", "o")
+            .replace("ç", "c")
+            .replace("&", "ve")
+            .replace(Regex("[^a-z0-9]"), "_")
+            .replace(Regex("_+"), "_")
+            .trim('_')
+        return "folder_$slug"
     }
 }

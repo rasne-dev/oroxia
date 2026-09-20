@@ -72,4 +72,29 @@ class GeminiCategorizerTest {
         assertEquals(LocalCategorizer.CATEGORY_CAREER, categorizer.normalizeCategory("Career"))
         assertEquals(LocalCategorizer.CATEGORY_OTHER, categorizer.normalizeCategory("bilinmeyen"))
     }
+
+    @Test
+    fun testSafetyGuard_OverridesGeminiHallucinationsForFinanceAndCareer() {
+        val worldMobil = com.oroxia.launcher.domain.categorizer.AppInfoForPrompt(
+            packageName = "com.ykb.avm",
+            appName = "World Mobil"
+        )
+        // Even if Gemini hallucinates and predicts "Araçlar & Sistem" or "Alışveriş"
+        val resolved = categorizer.resolveCategoryWithSafetyGuard(worldMobil, LocalCategorizer.CATEGORY_TOOLS)
+        assertEquals(LocalCategorizer.CATEGORY_FINANCE, resolved)
+
+        val bonusFlas = com.oroxia.launcher.domain.categorizer.AppInfoForPrompt(
+            packageName = "com.garanti.bonusflas",
+            appName = "Bonus Flaş"
+        )
+        val resolvedBonus = categorizer.resolveCategoryWithSafetyGuard(bonusFlas, LocalCategorizer.CATEGORY_SHOPPING)
+        assertEquals(LocalCategorizer.CATEGORY_FINANCE, resolvedBonus)
+
+        val spotify = com.oroxia.launcher.domain.categorizer.AppInfoForPrompt(
+            packageName = "com.spotify.music",
+            appName = "Spotify"
+        )
+        val resolvedSpotify = categorizer.resolveCategoryWithSafetyGuard(spotify, LocalCategorizer.CATEGORY_ENTERTAINMENT)
+        assertEquals(LocalCategorizer.CATEGORY_ENTERTAINMENT, resolvedSpotify)
+    }
 }

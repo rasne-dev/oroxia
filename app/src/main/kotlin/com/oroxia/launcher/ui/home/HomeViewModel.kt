@@ -98,7 +98,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     val apiKey = prefs.geminiApiKeyFlow.first()
                     appScanner.scanAndCategorizeInstalledApps(apiKey, forceRefresh = force)
                     prefs.updateLastScanTimestamp()
-                    if (force) {
+                    val autoPlace = prefs.autoFolderPlacementFlow.first()
+                    if (autoPlace || force) {
                         smartFolderManager.autoOrganizeAll()
                     }
                     refreshSuggestions()

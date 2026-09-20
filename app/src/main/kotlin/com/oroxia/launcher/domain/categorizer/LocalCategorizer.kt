@@ -41,26 +41,46 @@ class LocalCategorizer {
         )
 
         // Comprehensive keyword dictionaries for Turkish & global apps (normalized: i, g, u, s, o, c)
+        private val CAREER_PACKAGES = listOf(
+            "net.kariyer.", "tr.gov.iskur.", "com.isinolsun.", "com.eleman.", "com.linkedin.", "com.indeed."
+        )
+
         private val CAREER_KEYWORDS = listOf(
             "kariyer", "isin olsun", "isinolsun", "linkedin", "indeed", "iskur",
             "eleman", "secretcv", "yenibiris", "upwork", "fiverr", "freelancer", "armut",
             "bionluk", "job", "career", "resume", "cv maker", "cv hazirla", "headhunter", "glassdoor", "monster"
         )
 
+        private val FINANCE_PACKAGES = listOf(
+            "com.ykb.", "com.garanti.", "com.isbank.", "com.akbank.",
+            "com.vakifbank.", "com.halkbank.", "com.finansbank.", "com.enpara.",
+            "com.denizbank.", "com.teb.", "com.kuveytturk.", "com.albaraka.",
+            "com.papara.", "com.akodem.tosla", "com.isbank.nays", "com.turkcell.paycell",
+            "com.tompay.hadi", "com.hadi", "com.turktelekom.pokus", "com.ininal",
+            "com.param.", "com.fups", "com.sipay", "com.midas",
+            "com.btcturk", "com.paribu", "com.binance", "com.ziraat.", "com.dgpays",
+            "com.gtech.pharos"
+        )
+
         private val FINANCE_KEYWORDS = listOf(
-            // Turkish Banks & Official Apps
-            "garanti", "bbva", "cepsubesi", "isbank", "iscep", "is bankasi", "maximum",
+            // Turkish Banks, Credit Cards & Companion Apps
+            "garanti", "bbva", "cepsubesi", "bonusflas", "bonus flas", "bonus kart",
+            "isbank", "iscep", "is bankasi", "maximum mobil", "maximum genc", "maximum", "pazarama",
             "ziraat", "ziraat mobil", "ziraat katilim", "ziraat borsa",
-            "akbank", "axess", "wings", "yapikredi", "yapi kredi", "ykb", "world",
-            "vakif", "vakifbank", "vakif katilim", "vakif borsa",
-            "halkbank", "paraf", "halk yatirim", "qnb", "finansbank", "enpara",
-            "denizbank", "mobildeniz", "teb", "cepteteb", "ing bank", "ingbank", "ing mobil",
+            "akbank", "axess", "wings", "juzdan",
+            "yapikredi", "yapi kredi", "ykb", "world mobil", "worldmobil", "worldcard", "world card",
+            "vakif", "vakifbank", "vakif katilim", "vakif borsa", "vakifkart",
+            "halkbank", "paraf", "paraf mobil", "halk yatirim",
+            "qnb", "finansbank", "enpara", "cardfinans",
+            "denizbank", "mobildeniz", "fastpay",
+            "teb", "cepteteb", "ing bank", "ingbank", "ing mobil",
             "albaraka", "kuveytturk", "kuveyt turk", "turkiye finans", "emlak katilim",
             "anadolubank", "odeabank", "sekerbank", "burgan", "aktifbank", "nkolay", "n kolay",
             "fibabanka", "hayat finans", "tom bank",
             // Digital Wallets, FinTech & Payments
-            "papara", "tosla", "nays", "paycell", "fastpay", "hadi", "ininal", "pokus",
-            "param", "oldubil", "fups", "sipay", "pep", "iyzico", "paytr", "troy",
+            "papara", "tosla", "nays", "paycell", "hadi", "ininal", "pokus",
+            "param", "oldubil", "fups", "sipay", "pep", "ozan superapp", "ozan", "moneypay",
+            "iyzico", "paytr", "troy", "bkm express", "pos cepte", "poscepte", "cep pos",
             "paypal", "revolut", "wise", "wallet", "cuzdan", "kredi kart", "banka kart",
             // Crypto, Stocks & Investments
             "midas", "gedik", "oyak yatirim", "ak yatirim", "is yatirim", "matriks", "tradingview",
@@ -124,7 +144,7 @@ class LocalCategorizer {
         private val GAMES_KEYWORDS = listOf(
             "game", "oyun", "puzzle", "clash", "pubg", "candy", "chess", "satranc",
             "fifa", "roblox", "brawl", "minecraft", "sudoku", "runner", "race", "rpg",
-            "action", "arcade", "casino", "poker", "tavla", "okey", "101"
+            "action", "arcade", "casino", "poker", "tavla", "okey", "101", "tanks", "warcraft"
         )
 
         private val TOOLS_KEYWORDS = listOf(
@@ -132,6 +152,42 @@ class LocalCategorizer {
             "vpn", "flashlight", "fener", "clock", "saat", "alarm", "weather", "hava durumu",
             "settings", "ayarlar", "tools", "araclar", "qr okuyucu", "qr scanner", "barcode scanner", "speedtest"
         )
+    }
+
+    /**
+     * Returns true if an app is deterministically known to be a financial or banking app.
+     */
+    fun isHighConfidenceFinance(appName: String, packageName: String): Boolean {
+        val normalizedName = normalizeText(appName)
+        val normalizedPkg = normalizeText(packageName)
+        val combined = "$normalizedName $normalizedPkg"
+
+        // Avoid false positives for games containing "world" or "coin" (e.g., World of Tanks, Super Mario)
+        val isGameContext = combined.containsAny(listOf("world of", "jurassic world", "world war", "tanks", "warcraft"))
+        if (isGameContext) {
+            val isExplicitBank = normalizedPkg.contains("ykb") || normalizedPkg.contains("bank") ||
+                combined.contains("world mobil") || combined.contains("worldcard")
+            if (!isExplicitBank) return false
+        }
+
+        if (FINANCE_PACKAGES.any { packageName.startsWith(it) || packageName.contains(it) }) return true
+        if (combined.containsAny(FINANCE_KEYWORDS)) return true
+
+        return false
+    }
+
+    /**
+     * Returns true if an app is deterministically known to be a career or job search app.
+     */
+    fun isHighConfidenceCareer(appName: String, packageName: String): Boolean {
+        val normalizedName = normalizeText(appName)
+        val normalizedPkg = normalizeText(packageName)
+        val combined = "$normalizedName $normalizedPkg"
+
+        if (CAREER_PACKAGES.any { packageName.startsWith(it) || packageName.contains(it) }) return true
+        if (combined.containsAny(CAREER_KEYWORDS)) return true
+
+        return false
     }
 
     /**
@@ -143,13 +199,14 @@ class LocalCategorizer {
         packageName: String,
         appInfo: ApplicationInfo? = null
     ): String {
+        // 1. High Priority Deterministic Matches (Career and Finance have top priority)
+        if (isHighConfidenceCareer(appName, packageName)) return CATEGORY_CAREER
+        if (isHighConfidenceFinance(appName, packageName)) return CATEGORY_FINANCE
+
         val normalizedName = normalizeText(appName)
         val normalizedPkg = normalizeText(packageName)
         val combined = "$normalizedName $normalizedPkg"
 
-        // 1. High Priority Semantic Matches (Career and Finance have top priority)
-        if (combined.containsAny(CAREER_KEYWORDS)) return CATEGORY_CAREER
-        if (combined.containsAny(FINANCE_KEYWORDS)) return CATEGORY_FINANCE
         if (combined.containsAny(SHOPPING_KEYWORDS)) return CATEGORY_SHOPPING
         if (combined.containsAny(SOCIAL_KEYWORDS)) return CATEGORY_SOCIAL
         if (combined.containsAny(ENTERTAINMENT_KEYWORDS)) return CATEGORY_ENTERTAINMENT
