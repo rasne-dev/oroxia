@@ -61,7 +61,7 @@ open class UserPreferencesRepository(private val context: Context) : Preferences
     }
 
     override val autoFolderPlacementFlow: Flow<Boolean> = safePrefsFlow.map { prefs ->
-        prefs[Keys.AUTO_FOLDER_PLACEMENT] ?: false // Default: Suggestion mode
+        prefs[Keys.AUTO_FOLDER_PLACEMENT] ?: true // Default: Auto-organize into folders out of the box
     }
 
     override val lastScanTimestampFlow: Flow<Long> = safePrefsFlow.map { prefs ->

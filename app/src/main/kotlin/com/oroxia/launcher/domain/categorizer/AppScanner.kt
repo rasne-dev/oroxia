@@ -77,11 +77,17 @@ class AppScanner(
                     ?: localCategorizer.categorizeApp(appInfo.appName, appInfo.packageName)
                 val existing = cachedAppsMap[appInfo.packageName]
 
-                // If app category changed upon re-scan, re-route it to the new folder ID
-                val folderId = if (existing != null && existing.assignedFolderId != null && existing.category != category) {
+                // Automatically assign app to its matching smart category folder (unless it's "Diğer")
+                val categoryFolderId = if (!category.equals(LocalCategorizer.CATEGORY_OTHER, ignoreCase = true)) {
                     "folder_${category.lowercase().replace(" ", "_").replace("&", "ve")}"
                 } else {
-                    existing?.assignedFolderId
+                    null
+                }
+
+                val folderId = if (existing != null && existing.assignedFolderId != null && existing.category == category) {
+                    existing.assignedFolderId
+                } else {
+                    categoryFolderId
                 }
 
                 val entity = AppEntity(
