@@ -15,6 +15,27 @@ class LocalCategorizerTest {
     }
 
     @Test
+    fun testAiCategory_MatchesLeadingAiApps() {
+        assertEquals(LocalCategorizer.CATEGORY_AI, categorizer.categorizeApp("ChatGPT", "com.openai.chatgpt"))
+        assertEquals(LocalCategorizer.CATEGORY_AI, categorizer.categorizeApp("Gemini", "com.google.android.apps.bard"))
+        assertEquals(LocalCategorizer.CATEGORY_AI, categorizer.categorizeApp("Microsoft Copilot", "com.microsoft.copilot"))
+        assertEquals(LocalCategorizer.CATEGORY_AI, categorizer.categorizeApp("Claude", "com.anthropic.claude"))
+        assertEquals(LocalCategorizer.CATEGORY_AI, categorizer.categorizeApp("DeepSeek", "com.deepseek.chat"))
+        assertEquals(LocalCategorizer.CATEGORY_AI, categorizer.categorizeApp("Perplexity", "ai.perplexity.app.android"))
+    }
+
+    @Test
+    fun testWeatherCategory_MatchesWeatherAppsAndExcludesAirlines() {
+        assertEquals(LocalCategorizer.CATEGORY_WEATHER, categorizer.categorizeApp("Hava Durumu", "tr.gov.mgm.meteorolojihavadurumu"))
+        assertEquals(LocalCategorizer.CATEGORY_WEATHER, categorizer.categorizeApp("AccuWeather", "com.accuweather.android"))
+        assertEquals(LocalCategorizer.CATEGORY_WEATHER, categorizer.categorizeApp("Windy.com", "com.windyty.android"))
+        assertEquals(LocalCategorizer.CATEGORY_WEATHER, categorizer.categorizeApp("The Weather Channel", "com.weather.Weather"))
+
+        // Airlines should go to Travel, not Weather
+        assertEquals(LocalCategorizer.CATEGORY_TRAVEL, categorizer.categorizeApp("Türk Hava Yolları", "com.turkishairlines.mobile"))
+    }
+
+    @Test
     fun testCareerCategory_MatchesTurkishAndGlobalJobApps() {
         assertEquals(LocalCategorizer.CATEGORY_CAREER, categorizer.categorizeApp("LinkedIn", "com.linkedin.android"))
         assertEquals(LocalCategorizer.CATEGORY_CAREER, categorizer.categorizeApp("Indeed", "com.indeed.android.jobsearch"))

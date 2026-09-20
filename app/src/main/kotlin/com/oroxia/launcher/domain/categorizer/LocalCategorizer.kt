@@ -14,6 +14,8 @@ class LocalCategorizer {
     companion object {
         const val CATEGORY_CAREER = "Kariyer & İş"
         const val CATEGORY_FINANCE = "Finans & Bankacılık"
+        const val CATEGORY_AI = "Yapay Zeka"
+        const val CATEGORY_WEATHER = "Hava Durumu"
         const val CATEGORY_SOCIAL = "Sosyal & İletişim"
         const val CATEGORY_SHOPPING = "Alışveriş"
         const val CATEGORY_ENTERTAINMENT = "Eğlence & Medya"
@@ -28,6 +30,8 @@ class LocalCategorizer {
         val TAXONOMY = listOf(
             CATEGORY_CAREER,
             CATEGORY_FINANCE,
+            CATEGORY_AI,
+            CATEGORY_WEATHER,
             CATEGORY_SOCIAL,
             CATEGORY_SHOPPING,
             CATEGORY_ENTERTAINMENT,
@@ -41,6 +45,32 @@ class LocalCategorizer {
         )
 
         // Comprehensive keyword dictionaries for Turkish & global apps (normalized: i, g, u, s, o, c)
+        private val AI_PACKAGES = listOf(
+            "com.openai.chatgpt", "com.google.android.apps.bard", "com.microsoft.copilot",
+            "com.anthropic.claude", "ai.perplexity.app.android", "com.deepseek.chat",
+            "com.quora.poe", "ai.character.app", "ai.replika.app", "ai.inflection.pi",
+            "com.xai.grok", "com.mistral.chat", "com.huggingface", "com.midjourney"
+        )
+
+        private val AI_KEYWORDS = listOf(
+            "chatgpt", "openai", "copilot", "claude", "perplexity", "deepseek", "anthropic",
+            "poe", "grok", "character ai", "characterai", "replika", "midjourney", "leonardo ai",
+            "nova ai", "ask ai", "chaton", "genie ai", "bing ai", "yapay zeka",
+            "artificial intelligence", "ai chat", "ai bot", "ai assistant", "llm", "le chat",
+            "huggingchat", "poe ai", "dall e", "sora"
+        )
+
+        private val WEATHER_PACKAGES = listOf(
+            "tr.gov.mgm", "com.accuweather", "com.weather.Weather", "com.wunderground",
+            "com.windyty", "com.handmark.expressweather", "ru.yandex.weather",
+            "com.grailr.carrotweather", "com.weawow", "com.macropinch.swan"
+        )
+
+        private val WEATHER_KEYWORDS = listOf(
+            "hava durumu", "havadurumu", "meteoroloji", "accuweather", "weather channel",
+            "weather forecast", "weather radar", "yagmur radari", "radar hava", "firtina",
+            "windy", "mgm", "weawow", "hava tahmini", "canli hava", "weather"
+        )
         private val CAREER_PACKAGES = listOf(
             "net.kariyer.", "tr.gov.iskur.", "com.isinolsun.", "com.eleman.", "com.linkedin.", "com.indeed."
         )
@@ -126,7 +156,9 @@ class LocalCategorizer {
         private val TRAVEL_KEYWORDS = listOf(
             "maps", "harita", "uber", "bitaksi", "marti", "binbin", "scooter", "yandex",
             "moovit", "enuygun", "obilet", "skyscanner", "booking", "airbnb", "trivago",
-            "thy", "pegasus", "sunexpress", "navigasyon", "trip", "flight", "hotel"
+            "thy", "pegasus", "sunexpress", "navigasyon", "trip", "flight", "hotel",
+            "turkish airlines", "hava yollari", "havayollari", "havayolu", "airline", "airlines",
+            "havalimani", "havaalani", "airport"
         )
 
         private val EDUCATION_KEYWORDS = listOf(
@@ -149,9 +181,54 @@ class LocalCategorizer {
 
         private val TOOLS_KEYWORDS = listOf(
             "calculator", "hesap makinesi", "file manager", "dosya", "cleaner", "antivirus",
-            "vpn", "flashlight", "fener", "clock", "saat", "alarm", "weather", "hava durumu",
+            "vpn", "flashlight", "fener", "clock", "saat", "alarm",
             "settings", "ayarlar", "tools", "araclar", "qr okuyucu", "qr scanner", "barcode scanner", "speedtest"
         )
+    }
+
+    /**
+     * Returns true if an app is deterministically known to be an Artificial Intelligence (AI) app.
+     */
+    fun isHighConfidenceAI(appName: String, packageName: String): Boolean {
+        val normalizedName = normalizeText(appName)
+        val normalizedPkg = normalizeText(packageName)
+        val combined = "$normalizedName $normalizedPkg"
+
+        // Gemini AI vs Gemini Crypto exchange distinction
+        if (combined.contains("gemini")) {
+            val isCryptoExchange = combined.contains("crypto") || combined.contains("exchange") ||
+                combined.contains("bitcoin") || packageName.contains("com.gemini.android.app")
+            if (!isCryptoExchange) return true
+        }
+
+        if (AI_PACKAGES.any { packageName.startsWith(it) || packageName.contains(it) }) return true
+        if (combined.containsAny(AI_KEYWORDS)) return true
+
+        return false
+    }
+
+    /**
+     * Returns true if an app is deterministically known to be a weather forecast app.
+     */
+    fun isHighConfidenceWeather(appName: String, packageName: String): Boolean {
+        val normalizedName = normalizeText(appName)
+        val normalizedPkg = normalizeText(packageName)
+        val combined = "$normalizedName $normalizedPkg"
+
+        // Avoid false matches for airlines/airports (e.g. Türk Hava Yolları, Sabiha Gökçen Havalimanı)
+        val isAviation = combined.contains("hava yollari") || combined.contains("havayollari") ||
+            combined.contains("havayolu") || combined.contains("havalimani") ||
+            combined.contains("havaalani") || combined.contains("airlines") ||
+            combined.contains("airline") || combined.contains("airport") ||
+            combined.contains("turkish airlines")
+        if (isAviation) {
+            return false
+        }
+
+        if (WEATHER_PACKAGES.any { packageName.startsWith(it) || packageName.contains(it) }) return true
+        if (combined.containsAny(WEATHER_KEYWORDS)) return true
+
+        return false
     }
 
     /**
@@ -199,7 +276,9 @@ class LocalCategorizer {
         packageName: String,
         appInfo: ApplicationInfo? = null
     ): String {
-        // 1. High Priority Deterministic Matches (Career and Finance have top priority)
+        // 1. High Priority Deterministic Matches
+        if (isHighConfidenceAI(appName, packageName)) return CATEGORY_AI
+        if (isHighConfidenceWeather(appName, packageName)) return CATEGORY_WEATHER
         if (isHighConfidenceCareer(appName, packageName)) return CATEGORY_CAREER
         if (isHighConfidenceFinance(appName, packageName)) return CATEGORY_FINANCE
 

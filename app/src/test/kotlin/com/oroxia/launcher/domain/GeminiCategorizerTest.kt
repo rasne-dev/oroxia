@@ -63,6 +63,11 @@ class GeminiCategorizerTest {
 
     @Test
     fun testNormalizeCategory() {
+        assertEquals(LocalCategorizer.CATEGORY_AI, categorizer.normalizeCategory("yapay zeka"))
+        assertEquals(LocalCategorizer.CATEGORY_AI, categorizer.normalizeCategory("Artificial Intelligence"))
+        assertEquals(LocalCategorizer.CATEGORY_AI, categorizer.normalizeCategory("AI"))
+        assertEquals(LocalCategorizer.CATEGORY_WEATHER, categorizer.normalizeCategory("hava durumu"))
+        assertEquals(LocalCategorizer.CATEGORY_WEATHER, categorizer.normalizeCategory("Weather Forecast"))
         assertEquals(LocalCategorizer.CATEGORY_CAREER, categorizer.normalizeCategory("kariyer & iş"))
         assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.normalizeCategory("finans & bankacılık"))
         assertEquals(LocalCategorizer.CATEGORY_FINANCE, categorizer.normalizeCategory("Finans & Bankacilik"))
@@ -89,6 +94,20 @@ class GeminiCategorizerTest {
         )
         val resolvedBonus = categorizer.resolveCategoryWithSafetyGuard(bonusFlas, LocalCategorizer.CATEGORY_SHOPPING)
         assertEquals(LocalCategorizer.CATEGORY_FINANCE, resolvedBonus)
+
+        val chatGpt = com.oroxia.launcher.domain.categorizer.AppInfoForPrompt(
+            packageName = "com.openai.chatgpt",
+            appName = "ChatGPT"
+        )
+        val resolvedAi = categorizer.resolveCategoryWithSafetyGuard(chatGpt, LocalCategorizer.CATEGORY_PRODUCTIVITY)
+        assertEquals(LocalCategorizer.CATEGORY_AI, resolvedAi)
+
+        val accuWeather = com.oroxia.launcher.domain.categorizer.AppInfoForPrompt(
+            packageName = "com.accuweather.android",
+            appName = "AccuWeather"
+        )
+        val resolvedWeather = categorizer.resolveCategoryWithSafetyGuard(accuWeather, LocalCategorizer.CATEGORY_TOOLS)
+        assertEquals(LocalCategorizer.CATEGORY_WEATHER, resolvedWeather)
 
         val spotify = com.oroxia.launcher.domain.categorizer.AppInfoForPrompt(
             packageName = "com.spotify.music",

@@ -62,8 +62,26 @@ class AppScanner(
                 var updatedCached = cached!!
                 var changed = false
 
-                // 1. Auto-heal deterministic category misclassifications (e.g., World Mobil in Tools)
-                if (localCategorizer.isHighConfidenceFinance(label, pkg) &&
+                // 1. Auto-heal deterministic category misclassifications (AI, Weather, Finance, Career)
+                if (localCategorizer.isHighConfidenceAI(label, pkg) &&
+                    !updatedCached.category.equals(LocalCategorizer.CATEGORY_AI, ignoreCase = true)
+                ) {
+                    updatedCached = updatedCached.copy(
+                        category = LocalCategorizer.CATEGORY_AI,
+                        assignedFolderId = getFolderIdForCategory(LocalCategorizer.CATEGORY_AI),
+                        lastCategorizedAt = currentTime
+                    )
+                    changed = true
+                } else if (localCategorizer.isHighConfidenceWeather(label, pkg) &&
+                    !updatedCached.category.equals(LocalCategorizer.CATEGORY_WEATHER, ignoreCase = true)
+                ) {
+                    updatedCached = updatedCached.copy(
+                        category = LocalCategorizer.CATEGORY_WEATHER,
+                        assignedFolderId = getFolderIdForCategory(LocalCategorizer.CATEGORY_WEATHER),
+                        lastCategorizedAt = currentTime
+                    )
+                    changed = true
+                } else if (localCategorizer.isHighConfidenceFinance(label, pkg) &&
                     !updatedCached.category.equals(LocalCategorizer.CATEGORY_FINANCE, ignoreCase = true)
                 ) {
                     updatedCached = updatedCached.copy(

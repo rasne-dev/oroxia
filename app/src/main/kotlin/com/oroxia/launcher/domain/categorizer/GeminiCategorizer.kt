@@ -72,7 +72,13 @@ class GeminiCategorizer(
     }
 
     fun resolveCategoryWithSafetyGuard(app: AppInfoForPrompt, geminiCategory: String?): String {
-        // 1. High-confidence deterministic overrides (Prevents AI hallucinations for Banks, Credit Cards, Career)
+        // 1. High-confidence deterministic overrides (Prevents AI hallucinations for AI, Weather, Banks, Career)
+        if (localFallback.isHighConfidenceAI(app.appName, app.packageName)) {
+            return LocalCategorizer.CATEGORY_AI
+        }
+        if (localFallback.isHighConfidenceWeather(app.appName, app.packageName)) {
+            return LocalCategorizer.CATEGORY_WEATHER
+        }
         if (localFallback.isHighConfidenceFinance(app.appName, app.packageName)) {
             return LocalCategorizer.CATEGORY_FINANCE
         }
@@ -105,10 +111,16 @@ class GeminiCategorizer(
                - Döviz, altın, bütçe takibi, para yöneticisi, fatura ödeme, POS araçları (POS Cepte vb.), vergi ve GİB uygulamalarını MUTLAKA "${LocalCategorizer.CATEGORY_FINANCE}" kategorisine ata.
                - DİKKAT: Para, kart veya bankacılık ile ilgili hiçbir uygulamayı KESİNLİKLE "${LocalCategorizer.CATEGORY_TOOLS}" veya "${LocalCategorizer.CATEGORY_PRODUCTIVITY}" kategorisine ATMA!
 
-            2. KARİYER & İŞ KURALI:
+            2. YAPAY ZEKA KURALI:
+               - ChatGPT, Gemini, Copilot, Claude, Perplexity, DeepSeek, Poe, Character AI, Replika, Midjourney ve tüm yapay zeka/AI sohbet ve üretim araçlarını MUTLAKA "${LocalCategorizer.CATEGORY_AI}" kategorisine ata. Asla "${LocalCategorizer.CATEGORY_TOOLS}" veya "${LocalCategorizer.CATEGORY_PRODUCTIVITY}" yapma!
+
+            3. HAVA DURUMU KURALI:
+               - Meteoroloji (MGM), AccuWeather, The Weather Channel, Windy, Yandex Hava, hava durumu ve yağmur radarı uygulamalarını MUTLAKA "${LocalCategorizer.CATEGORY_WEATHER}" kategorisine ata. Asla "${LocalCategorizer.CATEGORY_TOOLS}" yapma!
+
+            4. KARİYER & İŞ KURALI:
                - LinkedIn, Indeed, Kariyer.net, İŞKUR, İşin Olsun, Eleman.net, CV hazırlama, iş arama uygulamalarını mutlaka "${LocalCategorizer.CATEGORY_CAREER}" kategorisine ata.
 
-            3. DİĞER KATEGORİLER:
+            5. DİĞER KATEGORİLER:
                - E-ticaret ve market (Trendyol, Amazon, Getir, Sahibinden, Yemeksepeti vb.): "${LocalCategorizer.CATEGORY_SHOPPING}"
                - Sosyal medya ve mesajlaşma (WhatsApp, Instagram, Telegram vb.): "${LocalCategorizer.CATEGORY_SOCIAL}"
                - Medya ve video (YouTube, Netflix, Spotify vb.): "${LocalCategorizer.CATEGORY_ENTERTAINMENT}"
@@ -233,6 +245,8 @@ class GeminiCategorizer(
             .replace("ç", "c")
 
         return when {
+            clean.contains("yapay zeka") || clean.contains("artificial intelligence") || clean == "ai" || clean.contains("yapay") -> LocalCategorizer.CATEGORY_AI
+            clean.contains("hava") || clean.contains("weather") || clean.contains("meteorolo") -> LocalCategorizer.CATEGORY_WEATHER
             clean.contains("finans") || clean.contains("bank") || clean.contains("finance") -> LocalCategorizer.CATEGORY_FINANCE
             clean.contains("kariyer") || clean.contains("is") || clean.contains("job") || clean.contains("career") -> LocalCategorizer.CATEGORY_CAREER
             clean.contains("sosyal") || clean.contains("iletisim") || clean.contains("social") || clean.contains("chat") -> LocalCategorizer.CATEGORY_SOCIAL
