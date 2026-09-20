@@ -68,16 +68,36 @@ fun AppDrawerScreen(
 
     val categories = remember { listOf("Hepsi") + LocalCategorizer.TAXONOMY }
 
-    // Combine all apps from folders and uncategorized
+    val collator = remember { java.text.Collator.getInstance(java.util.Locale.getDefault()) }
+
+    // Combine all apps from folders and uncategorized with locale-aware alphabetical sorting
     val allApps = remember(uiState.foldersWithApps, uiState.uncategorizedApps) {
         val list = mutableListOf<AppEntity>()
         uiState.foldersWithApps.forEach { list.addAll(it.apps) }
         list.addAll(uiState.uncategorizedApps)
-        list.distinctBy { it.packageName }.sortedBy { it.appName.lowercase() }
+        list.distinctBy { it.packageName }.sortedWith { a, b -> collator.compare(a.appName, b.appName) }
+    }
+
+    val normalizedQuery = remember(searchQuery) {
+        searchQuery.trim().lowercase()
+            .replace("ı", "i")
+            .replace("ğ", "g")
+            .replace("ü", "u")
+            .replace("ş", "s")
+            .replace("ö", "o")
+            .replace("ç", "c")
     }
 
     val filteredApps = allApps.filter { app ->
-        val matchesSearch = searchQuery.isBlank() || app.appName.contains(searchQuery, ignoreCase = true)
+        val normalizedName = app.appName.lowercase()
+            .replace("ı", "i")
+            .replace("ğ", "g")
+            .replace("ü", "u")
+            .replace("ş", "s")
+            .replace("ö", "o")
+            .replace("ç", "c")
+
+        val matchesSearch = normalizedQuery.isBlank() || normalizedName.contains(normalizedQuery)
         val matchesCategory = selectedCategory == "Hepsi" || app.category.equals(selectedCategory, ignoreCase = true)
         matchesSearch && matchesCategory
     }

@@ -212,11 +212,20 @@ fun HomeScreen(
 
 @Composable
 fun HomeHeader(modifier: Modifier = Modifier) {
-    val currentTime = remember {
-        SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+    var currentTime by remember {
+        mutableStateOf(SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date()))
     }
-    val currentDate = remember {
-        SimpleDateFormat("EEEE, d MMMM", Locale("tr")).format(Date())
+    var currentDate by remember {
+        mutableStateOf(SimpleDateFormat("EEEE, d MMMM", Locale("tr")).format(Date()))
+    }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            val now = Date()
+            currentTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(now)
+            currentDate = SimpleDateFormat("EEEE, d MMMM", Locale("tr")).format(now)
+            kotlinx.coroutines.delay(1000L)
+        }
     }
 
     Column(

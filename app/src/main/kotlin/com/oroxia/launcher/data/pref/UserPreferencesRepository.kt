@@ -8,10 +8,13 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.oroxia.launcher.BuildConfig
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import java.io.IOException
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "oroxia_user_prefs")
 
@@ -39,24 +42,33 @@ open class UserPreferencesRepository(private val context: Context) : Preferences
         val DISMISSED_PACKAGES = stringSetPreferencesKey("dismissed_packages")
     }
 
-    override val geminiApiKeyFlow: Flow<String> = context.dataStore.data.map { prefs ->
+    private val safePrefsFlow: Flow<Preferences> = context.dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+
+    override val geminiApiKeyFlow: Flow<String> = safePrefsFlow.map { prefs ->
         val saved = prefs[Keys.GEMINI_API_KEY]
         if (!saved.isNullOrBlank()) saved else BuildConfig.GEMINI_API_KEY
     }
 
-    override val autoCategorizeEnabledFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+    override val autoCategorizeEnabledFlow: Flow<Boolean> = safePrefsFlow.map { prefs ->
         prefs[Keys.AUTO_CATEGORIZE_ENABLED] ?: true
     }
 
-    override val autoFolderPlacementFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+    override val autoFolderPlacementFlow: Flow<Boolean> = safePrefsFlow.map { prefs ->
         prefs[Keys.AUTO_FOLDER_PLACEMENT] ?: false // Default: Suggestion mode
     }
 
-    override val lastScanTimestampFlow: Flow<Long> = context.dataStore.data.map { prefs ->
+    override val lastScanTimestampFlow: Flow<Long> = safePrefsFlow.map { prefs ->
         prefs[Keys.LAST_SCAN_TIMESTAMP] ?: 0L
     }
 
-    override val dismissedPackagesFlow: Flow<Set<String>> = context.dataStore.data.map { prefs ->
+    override val dismissedPackagesFlow: Flow<Set<String>> = safePrefsFlow.map { prefs ->
         prefs[Keys.DISMISSED_PACKAGES] ?: emptySet()
     }
 

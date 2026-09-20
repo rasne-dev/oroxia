@@ -25,14 +25,15 @@ class SmartFolderManager(
         val autoPlace = preferencesRepository.autoFolderPlacementFlow.first()
 
         val suggestions = mutableListOf<FolderSuggestion>()
-        val folderByCategory = allFolders.associateBy { it.category.lowercase() }
 
         for (app in allApps) {
             if (dismissed.contains(app.packageName)) continue
+            // Do not generate suggestion cards for uncategorized/Other apps
+            if (app.category.equals(LocalCategorizer.CATEGORY_OTHER, ignoreCase = true)) continue
 
             // If app is not yet assigned to a folder
             if (app.assignedFolderId == null) {
-                val matchingFolder = folderByCategory[app.category.lowercase()]
+                val matchingFolder = allFolders.firstOrNull { it.category.equals(app.category, ignoreCase = true) }
                     ?: allFolders.firstOrNull { it.name.equals(app.category, ignoreCase = true) }
 
                 if (matchingFolder != null) {
@@ -67,10 +68,14 @@ class SmartFolderManager(
     suspend fun autoOrganizeAll() {
         val allApps = appDao.getAllAppsSync()
         val allFolders = folderDao.getAllFoldersSync()
-        val folderByCategory = allFolders.associateBy { it.category.lowercase() }
 
         for (app in allApps) {
-            val matchingFolder = folderByCategory[app.category.lowercase()]
+            // Keep uncategorized/Other apps in the individual apps section
+            if (app.category.equals(LocalCategorizer.CATEGORY_OTHER, ignoreCase = true)) continue
+
+            val matchingFolder = allFolders.firstOrNull { it.category.equals(app.category, ignoreCase = true) }
+                ?: allFolders.firstOrNull { it.name.equals(app.category, ignoreCase = true) }
+
             if (matchingFolder != null) {
                 appDao.assignFolder(app.packageName, matchingFolder.id)
             }

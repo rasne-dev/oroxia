@@ -28,13 +28,25 @@ class AppScanner(
         val pm = context.packageManager
         val installed = pm.getInstalledApplications(PackageManager.GET_META_DATA)
 
-        // Filter system apps per constraints
+        // Filter system apps, self package, and apps without a launchable activity
         val userApps = installed.filter { appInfo ->
-            (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) == 0
+            val isNotSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) == 0
+            val isNotSelf = appInfo.packageName != context.packageName
+            val hasLaunchIntent = pm.getLaunchIntentForPackage(appInfo.packageName) != null
+            isNotSystem && isNotSelf && hasLaunchIntent
         }
 
         val currentTime = System.currentTimeMillis()
         val cachedAppsMap = appDao.getAllAppsSync().associateBy { it.packageName }
+
+        // Clean stale apps that are no longer installed on the device
+        val installedPackageNames = userApps.map { it.packageName }.toSet()
+        val stalePackages = cachedAppsMap.keys - installedPackageNames
+        for (stalePkg in stalePackages) {
+            appDao.deleteApp(stalePkg)
+            com.oroxia.launcher.ui.common.IconCache.remove(stalePkg)
+        }
+
         val appsToCategorize = mutableListOf<AppInfoForPrompt>()
         val finalAppEntities = mutableListOf<AppEntity>()
 

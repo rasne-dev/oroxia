@@ -27,13 +27,17 @@ enum class LauncherScreen {
 
 class MainActivity : ComponentActivity() {
     private val homeViewModel: HomeViewModel by viewModels()
+    private var currentScreen by mutableStateOf(LauncherScreen.HOME)
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        currentScreen = LauncherScreen.HOME
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             OroxiaTheme {
-                var currentScreen by remember { mutableStateOf(LauncherScreen.HOME) }
-
                 BackHandler(enabled = currentScreen != LauncherScreen.HOME) {
                     currentScreen = LauncherScreen.HOME
                 }
